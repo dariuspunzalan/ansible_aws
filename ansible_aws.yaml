@@ -1,0 +1,6 @@
+---
+- name: AWS CF
+  become: yes
+
+  roles:
+    - aws_vpc
