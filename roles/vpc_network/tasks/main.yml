@@ -1,2 +1,45 @@
 ---
 # tasks file for vpc_network
+# - name: Render VPC CFN file
+#   template:
+#     src: create_vpc.yml.j2
+#     dest: "{{ role_path }}/cfn/create_vpc.yml"
+
+# - name: Build VPC
+#   cloudformation:
+#     stack_name: "{{ infraid }}-cluster-infra"
+#     state: present
+#     region: "{{ region }}"
+#     template: "{{ role_path }}/cfn/create_vpc.yml"
+#     template_parameters:
+#       ClusterName: "{{ clustername }}"
+#       InfrastructureName: "{{ infraid }}"
+#       PrivateSubnets: "{{ privatesubnets}}"
+#       PrivateZoneId: "{{ privatezoneid | default(omit) }}"
+#       HostedZoneId: "{{ privatezoneid }}"
+#       HostedZoneName: "{{ privatezonename }}"
+#       VpcId: "{{ vpcid }}"
+#     tags:
+#       clustername: "{{ clustername }}"
+#       infraid: "{{ infraid }}"
+#   register: cluster_infra_stack
+- name: Build VPC
+  cloudformation:
+    stack_name: "{{ stack_name|default(LabStack) }}"
+    state: present
+    region: "{{ region|default(omit) }}"
+    template_body: "{{ lookup ('template', 'create_vpc.yml.j2') }}"
+    # template: "{{ role_path }}/cfn/create_vpc.yml"
+    # template_parameters:
+      # ClusterName: "{{ clustername }}"
+      # InfrastructureName: "{{ infraid }}"
+      # PrivateSubnets: "{{ privatesubnets}}"
+      # PrivateZoneId: "{{ privatezoneid | default(omit) }}"
+      # HostedZoneId: "{{ privatezoneid }}"
+      # HostedZoneName: "{{ privatezonename }}"
+      # VpcId: "{{ vpcid }}"
+    tags:
+      stack_name: "{{ stack_name|default(LabStack) }}"
+      # clustername: "{{ clustername }}"
+      # infraid: "{{ infraid }}"
+  register: "vpc_{{ stack_name }}_info"
