@@ -1,6 +1,6 @@
 ---
-- name: AWS CF
-  become: yes
+- hosts: aws_cli
+  gather_facts: false
 
   roles:
     - vpc_network
