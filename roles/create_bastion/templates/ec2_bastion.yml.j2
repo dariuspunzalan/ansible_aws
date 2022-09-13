@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2 Bastion server - "{{ stack_name|default('LabStack') }}"
+
+Parameters:
+  VPCID:
+    Type: String
+    Description: VPCID taken from Ansible fact
+
+Resources:
+{% for secgroup in bastionSG|default({}) %}
+  {{ secgroup.name }}:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+{% if secgroup.desc is defined %}
+      GroupDescription: "{{ secgroup.desc }}"
+{% endif %}
+      GroupName: "{{ secgroup.name }}"
+      VpcId: !Ref VPCID
+{% for ingress_rule in secgroup.ingress|default({}) %}
+  {{ ingress_rule.name }}:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    DependsOn: {{ secgroup.name }}
+    Properties:
+      IpProtocol: "{{ ingress_rule.IpProtocol|default("tcp") }}"
+{% if ingress_rule.CidrIp is defined %}
+      CidrIp: "{{ ingress_rule.CidrIp }}"
+{% endif %}
+{% if ingress_rule.FromPort is defined %}
+      FromPort: "{{ ingress_rule.FromPort }}"
+{% endif %}
+{% if ingress_rule.ToPort is defined %}
+      ToPort: "{{ ingress_rule.ToPort }}"
+{% endif %}
+{% if ingress_rule.SourcePrefixListId is defined %}
+      SourcePrefixListId: {{ ingress_rule.SourcePrefixListId }}
+{% endif %}
+{% if ingress_rule.SourceSecurityGroupIownerId is defined %}
+      SourceSecurityGroupOwnerId: {{ ingress_rule.SourceSecurityGroupOwnerId }}
+{% endif %}
+      GroupId: !Ref {{ secgroup.name }}
+      Tags:
+        - Key: Name
+          Value: {{ ingress_rule.name }}
+{% endfor %}
+
+{% for egress_rule in secgroup.egress|default({}) %}
+  {{ egress_rule.name }}:
+    Type: "AWS::EC2::SecurityGroupEgress"
+    {DependsOn: { secgroup.name }}
+    Properties:
+      IpProtocol: "{{ egress_rule.IpProtocol|default("tcp") }}"
+{% if egress_rule.CidrIp is defined %}
+      CidrIp: "{{ egress_rule.CidrIp }}"
+{% endif %}
+{% if egress_rule.FromPort is defined %}
+      FromPort: "{{ egress_rule.FromPort }}"
+{% endif %}
+{% if egress_rule.ToPort is defined %}
+      ToPort: "{{ egress_rule.ToPort }}"
+{% endif %}
+{% if egress_rule.SourcePrefixListId is defined %}
+      SourcePrefixListId: {{ egress_rule.SourcePrefixListId }}
+{% endif %}
+{% if egress_rule.SourceSecurityGroupIownerId is defined %}
+      SourceSecurityGroupOwnerId: {{ egress_rule.SourceSecurityGroupOwnerId }}
+{% endif %}
+      GroupId: !Ref {{ secgroup.name }}
+      Tags:
+        - Key: Name
+          Value: {{ egress_rule.name }}
+{% endfor %}
+{% endfor %}
+
+# EC2
+  {{ bastionServer }}:
+    Type: "AWS::EC2::Instance"
+{% if bastionMetaData is defined %}
+    Metadata: {{ bastionMetadata }}
+{% endif %}
+    Properties:
+      ImageId: "{{ bastionImageId|default('ami-0808460885ff81045') }}"
+      InstanceType: "{{ bastionInstanceType|default('t2.micro') }}"
+      KeyName: {{ bastionKeyName|default('aws1_keypair') }}
+      SubnetId: !Select [0, {{ publicsubnetids }}]
+      SecurityGroupIds:
+{% for secgroup in bastionSG %}
+      - !Ref {{ secgroup.name }}
+{% endfor %}
+{% if bastionUserData is defined %}
+      UserData: {{ bastionUserData }}
+{% endif %}
+      BlockDeviceMappings:
+      - DeviceName: /dev/xvda
+        Ebs:
+          VolumeSize: "8"
+          VolumeType: "gp2"
+      Tags:
+        - Key: Name
+          Value: {{ bastionServer }}

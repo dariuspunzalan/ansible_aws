@@ -4,3 +4,4 @@
 
   roles:
     - vpc_network
+    - create_bastion

@@ -22,21 +22,6 @@ Parameters:
     Default: 12
     Description: "Size of each subnet to create within the availability zones. (Min: 5 = /27, Max: 13 = /19)"
     Type: Number
-
-# vpccidr:
-#   cidrblock: 10.10.0.0/16
-#   privatesubnets:
-#     - name: lab
-#       cidr: 10.10.1.0/24
-#       subnetbits: 5
-#     - name: api
-#       cidr: 10.10.1.0/24
-#       subnetbits: 6
-#   publicsubnets:
-#     - name: frontend
-#       cidr: 10.10.10.0/24
-#       subnetbits: 6
-
 Resources:
   VPC:
     Type: "AWS::EC2::VPC"
@@ -69,18 +54,6 @@ Resources:
     Type: "AWS::EC2::RouteTable"
     Properties:
       VpcId: !Ref VPC
-#  PrivateRoute:
-#    Type: "AWS::EC2::Route"
-#    Properties:
-#      RouteTableId:
-#        Ref: PrivateRouteTable
-#      DestinationCidrBlock: 0.0.0.0/0
-#      NatGatewayId:
-#        Ref: NAT
-#  EIP:
-#    Type: "AWS::EC2::EIP"
-#    Properties:
-#      Domain: VPC
 
 # create private subnet per AZs
 {% for subnet_dict in vpccidr.privatesubnets|default({}) %}
@@ -123,19 +96,5 @@ Resources:
     Properties:
       SubnetId: !Ref publicsubnet{{ subnet_dict.name }}{{ AZ + 1}}
       RouteTableId: !Ref PublicRouteTable
-#  EIP{{ AZ + 1}}:
-#    Type: "AWS::EC2::EIP"
-#    Properties:
-#      Domain: vpc
-#  NAT:
-#    DependsOn:
-#    - GatewayToInternet
-#    Type: "AWS::EC2::NatGateway"
-#    Properties:
-#      AllocationId:
-#        "Fn::GetAtt":
-#        - EIP{{ AZ + 1}}
-#        - AllocationId
-#      SubnetId: !Ref publicsubnet{{ subnet_dict.name }}{{ AZ + 1}}
 {% endfor %}
 {% endfor %}

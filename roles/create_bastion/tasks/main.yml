@@ -1,0 +1,17 @@
+---
+# tasks file for create_bastion
+- name: Render cfn template for review
+  template:
+    src: ec2_bastion.yml.j2
+    dest: /tmp/ec2_bastion.yml
+- name: 'Create bastion server'
+  cloudformation:
+    stack_name: "BastionStack"
+    state: present
+    region: "{{ region|default(omit) }}"
+    template_body: "{{ lookup ('template', 'ec2_bastion.yml.j2') }}"
+    template_parameters:
+      VPCID: "{{ vpcid }}"
+    tags:
+      Name: BastionStack
+  register: bastion_info

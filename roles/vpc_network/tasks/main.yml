@@ -12,4 +12,20 @@
     template_body: "{{ lookup ('template', 'create_vpc.yml.j2') }}"
     tags:
       stack_name: "{{ stack_name|default('LabStack') }}"
-  #register: "vpc_{{ stack_name|default('LabStack') }}_info"
+  register: "vpc_stack_info"
+
+- name: set_fact vpc stack
+  set_fact:
+    vpcstackinfo: "{{ vpc_stack_info }}"
+
+- name: set_fact public subnets
+  set_fact:
+    publicsubnetids: "{{ vpc_stack_info.stack_resources|to_json|from_json|json_query(match_public) }}"
+  vars:
+    match_public: "[?contains(logical_resource_id, 'publicsubnet')].physical_resource_id"
+
+- name: set_fact VPC
+  set_fact:
+    vpcid: "{{ vpc_stack_info['stack_resources']|json_query(match_vpc)|first }}"
+  vars:
+    match_vpc: "[?resource_type=='AWS::EC2::VPC'].physical_resource_id"
